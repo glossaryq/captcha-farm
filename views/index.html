@@ -1,0 +1,68 @@
+{{define "index"}}
+<div class="bg-white rounded-lg shadow-md p-6">
+    <h1 class="text-2xl font-bold text-gray-800 mb-6">Очередь задач капчи</h1>
+    <div class="mb-4 flex justify-between items-center">
+        <div class="flex space-x-2">
+            <span class="text-sm text-gray-500">Всего задач: {{len .Tasks}}</span>
+        </div>
+        <div class="flex space-x-2">
+            <a href="/solve-queue" class="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded transition">
+                Решать задачи
+            </a>
+            <a href="/create" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition">
+                Создать задачу
+            </a>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border border-gray-200">
+            <thead>
+            <tr class="bg-gray-100">
+                <th class="py-3 px-4 border-b text-left text-xs font-medium text-gray-600 uppercase tracking-wider">ID</th>
+                <th class="py-3 px-4 border-b text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Тип</th>
+                <th class="py-3 px-4 border-b text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Target URL</th>
+                <th class="py-3 px-4 border-b text-left text-xs font-medium text-gray-600 uppercase tracking-wider">SiteKey</th>
+                <th class="py-3 px-4 border-b text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Статус</th>
+                <th class="py-3 px-4 border-b text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Действие</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{range $id, $task := .Tasks}}
+            <tr class="hover:bg-gray-50">
+                <td class="py-3 px-4 border-b border-gray-200">{{$task.ID}}</td>
+                <td class="py-3 px-4 border-b border-gray-200">
+                    {{if eq $task.CaptchaType "recaptcha"}}
+                    <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">reCAPTCHA</span>
+                    {{else}}
+                    <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded">hCaptcha</span>
+                    {{end}}
+                </td>
+                <td class="py-3 px-4 border-b border-gray-200 max-w-xs truncate">{{$task.TargetURL}}</td>
+                <td class="py-3 px-4 border-b border-gray-200">{{$task.SiteKey}}</td>
+                <td class="py-3 px-4 border-b border-gray-200">
+                    {{if $task.CaptchaResponse}}
+                    <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Решена</span>
+                    {{else}}
+                    <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded">Ожидает</span>
+                    {{end}}
+                </td>
+                <td class="py-3 px-4 border-b border-gray-200">
+                    {{if not $task.CaptchaResponse}}
+                    <a href="/captcha/{{$task.ID}}" class="text-blue-600 hover:text-blue-800 font-medium">Решить</a>
+                    {{else}}
+                    <a href="/result/{{$task.ID}}" class="text-green-600 hover:text-green-800 font-medium">Посмотреть результат</a>
+                    {{end}}
+                </td>
+            </tr>
+            {{end}}
+            {{if eq (len .Tasks) 0}}
+            <tr>
+                <td colspan="6" class="py-8 text-center text-gray-500">Нет доступных задач</td>
+            </tr>
+            {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+{{end}}

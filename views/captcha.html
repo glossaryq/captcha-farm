@@ -1,0 +1,52 @@
+{{define "captcha"}}
+<div class="bg-white rounded-lg shadow-md p-6 max-w-2xl mx-auto">
+  <h1 class="text-2xl font-bold text-gray-800 mb-6">Решите капчу для задачи #{{.Task.ID}}</h1>
+
+  <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <p class="text-sm text-gray-500">Target URL:</p>
+        <p class="text-gray-700 break-all">{{.Task.TargetURL}}</p>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Site Key:</p>
+        <p class="text-gray-700">{{.Task.SiteKey}}</p>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Тип капчи:</p>
+        <p class="text-gray-700">
+          {{if eq .Task.CaptchaType "recaptcha"}}
+          <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">reCAPTCHA</span>
+          {{else}}
+          <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded">hCaptcha</span>
+          {{end}}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <form action="/solve/{{.Task.ID}}" method="post" class="space-y-6">
+    <div class="flex justify-center">
+      {{if eq .Task.CaptchaType "recaptcha"}}
+      <!-- reCAPTCHA script -->
+      <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+      <div class="g-recaptcha" data-sitekey="{{.Task.SiteKey}}"></div>
+      {{else}}
+      <!-- hCaptcha script (default) -->
+      <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+      <div class="h-captcha" data-sitekey="{{.Task.SiteKey}}"></div>
+      {{end}}
+    </div>
+
+    <div class="flex justify-center">
+      <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-300">
+        Отправить решение
+      </button>
+    </div>
+  </form>
+
+  <div class="mt-6 text-center">
+    <a href="/" class="text-blue-600 hover:text-blue-800">← Вернуться к списку</a>
+  </div>
+</div>
+{{end}}

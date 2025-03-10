@@ -1,0 +1,233 @@
+{{define "solve-queue"}}
+<div id="app" class="bg-white rounded-lg shadow-md p-6 max-w-3xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 mb-6">Решение задач очереди</h1>
+
+    <div class="mb-6 flex items-center gap-3">
+        <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+            Задач в очереди: <span id="queue-count">{{.Count}}</span>
+        </span>
+        <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+            Решено: <span id="solved-count">0</span>
+        </span>
+        <span class="ml-auto text-gray-500 text-sm" id="no-tasks-message" style="display: none;">
+            Все задачи решены
+        </span>
+    </div>
+
+    <div id="task-container" class="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6" style="display: none;">
+        <div class="text-sm text-gray-500 mb-4">Задача #<span id="task-id"></span></div>
+
+        <div>
+            <p class="text-sm text-gray-500">Тип капчи:</p>
+            <p class="text-gray-700">
+                <span id="captcha-type" class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded">hCaptcha</span>
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+                <p class="text-sm text-gray-500">Target URL:</p>
+                <p class="text-gray-700 break-all" id="target-url"></p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Site Key:</p>
+                <p class="text-gray-700" id="site-key"></p>
+            </div>
+        </div>
+
+        <form id="solve-form" class="space-y-6">
+            <div class="flex justify-center">
+                <div id="captcha-container"></div>
+            </div>
+
+            <div class="flex justify-center">
+                <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    Отправить решение
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div id="success-message" class="p-4 rounded-md bg-green-50 border border-green-200 mb-6" style="display: none;">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-green-800">Капча успешно решена!</h3>
+                <div class="mt-2 text-sm text-green-700">
+                    <p>Загружаем следующую задачу...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-6 text-center">
+        <a href="/" class="text-blue-600 hover:text-blue-800">← Вернуться к списку задач</a>
+    </div>
+</div>
+
+<script>
+    let currentTaskId = null;
+    let solvedCount = 0;
+    let hcaptchaWidget = null;
+    const captchaContainer = document.getElementById('captcha-container');
+
+    // Helper function to submit the captcha solution
+    function submitCaptchaSolution(paramName, response) {
+        if (!currentTaskId) return;
+
+        const formData = new FormData();
+        formData.append(paramName, response);
+
+        fetch(`/solve/${currentTaskId}`, {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('Error solving captcha');
+
+                // Показываем сообщение об успешном решении
+                document.getElementById('success-message').style.display = 'block';
+
+                // Увеличиваем счетчик решенных задач
+                solvedCount++;
+                document.getElementById('solved-count').textContent = solvedCount;
+
+                // Скрываем сообщение через 2 секунды и загружаем следующую задачу
+                setTimeout(() => {
+                    document.getElementById('success-message').style.display = 'none';
+                    getNextTask();
+                }, 2000);
+            })
+            .catch(error => {
+                console.error('Error solving captcha:', error);
+                alert('Произошла ошибка при отправке решения');
+            });
+    }
+
+    // Функция для получения первой нерешенной задачи из очереди
+    function getNextTask() {
+        fetch('/api/next-task')
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        // Нет доступных задач
+                        document.getElementById('task-container').style.display = 'none';
+                        document.getElementById('no-tasks-message').style.display = 'block';
+                        throw new Error('No tasks available');
+                    }
+                    throw new Error('Server error');
+                }
+                return response.json();
+            })
+            .then(task => {
+                currentTaskId = task.id;
+                document.getElementById('task-id').textContent = task.id;
+                document.getElementById('target-url').textContent = task.target_url;
+                document.getElementById('site-key').textContent = task.sitekey;
+
+                // Show task type
+                const captchaType = task.captcha_type || 'hcaptcha';
+                document.getElementById('captcha-type').textContent =
+                    captchaType === 'recaptcha' ? 'reCAPTCHA' : 'hCaptcha';
+
+                // Показываем контейнер задачи
+                document.getElementById('task-container').style.display = 'block';
+                document.getElementById('no-tasks-message').style.display = 'none';
+
+                // Clear previous captcha widgets
+                captchaContainer.innerHTML = '';
+                if (hcaptchaWidget !== null && window.hcaptcha) {
+                    hcaptcha.reset(hcaptchaWidget);
+                    hcaptcha.remove(hcaptchaWidget);
+                    hcaptchaWidget = null;
+                }
+                if (window.grecaptcha && typeof grecaptcha.reset === 'function') {
+                    grecaptcha.reset();
+                }
+
+                // Handle captcha type-specific loading
+                if (captchaType === 'recaptcha') {
+                    // Remove any existing reCAPTCHA scripts
+                    const existingScripts = document.querySelectorAll('script[src*="recaptcha/api.js"]');
+                    existingScripts.forEach(script => script.remove());
+
+                    // Load reCAPTCHA
+                    const recaptchaScript = document.createElement('script');
+                    recaptchaScript.src = 'https://www.google.com/recaptcha/api.js';
+                    recaptchaScript.async = true;
+                    recaptchaScript.defer = true;
+                    document.head.appendChild(recaptchaScript);
+
+                    const recaptchaElement = document.createElement('div');
+                    recaptchaElement.className = 'g-recaptcha';
+                    recaptchaElement.setAttribute('data-sitekey', task.sitekey);
+                    captchaContainer.appendChild(recaptchaElement);
+
+                    // Update form handler to use reCAPTCHA
+                    document.getElementById('solve-form').onsubmit = function(e) {
+                        e.preventDefault();
+                        const response = grecaptcha.getResponse();
+                        if (!response) {
+                            alert('Пожалуйста, решите капчу');
+                            return false;
+                        }
+                        submitCaptchaSolution('g-recaptcha-response', response);
+                    };
+                } else {
+                    // Remove any existing hCaptcha scripts
+                    const existingScripts = document.querySelectorAll('script[src*="hcaptcha.com"]');
+                    existingScripts.forEach(script => script.remove());
+
+                    // Load hCaptcha
+                    const hcaptchaScript = document.createElement('script');
+                    hcaptchaScript.src = 'https://js.hcaptcha.com/1/api.js';
+                    hcaptchaScript.async = true;
+                    hcaptchaScript.defer = true;
+                    document.head.appendChild(hcaptchaScript);
+
+                    const hcaptchaElement = document.createElement('div');
+                    hcaptchaElement.className = 'h-captcha';
+                    hcaptchaElement.setAttribute('data-sitekey', task.sitekey);
+                    captchaContainer.appendChild(hcaptchaElement);
+
+                    // Render hCaptcha widget
+                    setTimeout(() => {
+                        if (window.hcaptcha) {
+                            hcaptchaWidget = hcaptcha.render(hcaptchaElement);
+                        }
+                    }, 100);
+
+                    // Update form handler to use hCaptcha
+                    document.getElementById('solve-form').onsubmit = function(e) {
+                        e.preventDefault();
+                        if (!hcaptchaWidget) return false;
+
+                        const response = hcaptcha.getResponse(hcaptchaWidget);
+                        if (!response) {
+                            alert('Пожалуйста, решите капчу');
+                            return false;
+                        }
+                        submitCaptchaSolution('h-captcha-response', response);
+                    };
+                }
+
+                // Обновляем количество задач
+                fetch('/api/queue-count')
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('queue-count').textContent = data.count;
+                    });
+            })
+            .catch(error => {
+                console.error('Error fetching next task:', error);
+            });
+    }
+
+    // Загружаем первую задачу при загрузке страницы
+    window.addEventListener('load', getNextTask);
+</script>
+{{end}}
