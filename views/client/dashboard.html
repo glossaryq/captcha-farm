@@ -1,0 +1,57 @@
+{{define "client/dashboard"}}
+<div class="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Client Dashboard</h1>
+    <p class="mb-4">Welcome, {{.User.Username}} (Client)</p>
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Your Tasks</h2>
+        <table class="min-w-full bg-white border border-gray-200">
+            <thead>
+            <tr class="bg-gray-100">
+                <th class="py-3 px-4 border-b text-left text-xs font-medium text-gray-600 uppercase tracking-wider">ID</th>
+                <th class="py-3 px-4 border-b text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Type</th>
+                <th class="py-3 px-4 border-b text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Target URL</th>
+                <th class="py-3 px-4 border-b text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Status</th>
+                <th class="py-3 px-4 border-b text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{range .Tasks}}
+            <tr class="hover:bg-gray-50">
+                <td class="py-3 px-4 border-b border-gray-200">{{.ID}}</td>
+                <td class="py-3 px-4 border-b border-gray-200">
+                    {{if eq .CaptchaType "recaptcha"}}
+                    <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">reCAPTCHA</span>
+                    {{else}}
+                    <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded">hCaptcha</span>
+                    {{end}}
+                </td>
+                <td class="py-3 px-4 border-b border-gray-200 break-all">{{.TargetURL}}</td>
+                <td class="py-3 px-4 border-b border-gray-200">
+                    {{if .CaptchaResponse}}
+                    <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Solved</span>
+                    {{else}}
+                    <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded">Pending</span>
+                    {{end}}
+                </td>
+                <td class="py-3 px-4 border-b border-gray-200">
+                    {{if not .CaptchaResponse}}
+                    <a href="/captcha/{{.ID}}" class="text-blue-600 hover:text-blue-800 font-medium">Solve</a>
+                    {{else}}
+                    <a href="/result/{{.ID}}" class="text-green-600 hover:text-green-800 font-medium">View Result</a>
+                    {{end}}
+                </td>
+            </tr>
+            {{end}}
+            {{if eq (len .Tasks) 0}}
+            <tr>
+                <td colspan="5" class="py-8 text-center text-gray-500">No tasks available</td>
+            </tr>
+            {{end}}
+            </tbody>
+        </table>
+    </div>
+    <div>
+        <a href="/client/api-key/regenerate" class="text-blue-600 hover:text-blue-800">Regenerate API Key</a>
+    </div>
+</div>
+{{end}}

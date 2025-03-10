@@ -82,21 +82,16 @@
         const formData = new FormData();
         formData.append(paramName, response);
 
-        fetch(`/solve/${currentTaskId}`, {
+        fetch(`/worker/solve/${currentTaskId}`, {
             method: 'POST',
             body: formData
         })
             .then(response => {
                 if (!response.ok) throw new Error('Error solving captcha');
 
-                // Показываем сообщение об успешном решении
                 document.getElementById('success-message').style.display = 'block';
-
-                // Увеличиваем счетчик решенных задач
                 solvedCount++;
                 document.getElementById('solved-count').textContent = solvedCount;
-
-                // Скрываем сообщение через 2 секунды и загружаем следующую задачу
                 setTimeout(() => {
                     document.getElementById('success-message').style.display = 'none';
                     getNextTask();
